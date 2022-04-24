@@ -23,4 +23,37 @@ class DB_OPS:
             return records
         except Exception as error:
             logger.error("DB_OPS", "fetch_all", str(error))
-            return 
+            return []
+    
+    def filter_fetch(self, model, conditions):
+        try:
+            query = self.db.query(model)
+            conditions = dict(conditions)
+            columns = list(conditions.keys())
+            for col in columns:
+                query = query.where(getattr(model, col).in_(conditions[col]))
+            records = query.all()
+            return records
+        except Exception as error:
+            logger.error("DB_OPS", "filter_fetch", str(error))
+            return []
+    
+    def search_fetch(self, model, conditions):
+        try:
+            query = self.db.query(model)
+            conditions = dict(conditions)
+            columns = list(conditions.keys())
+            for col in columns:
+                query = query.where(getattr(model, col).like(f"%{conditions[col]}%"))
+            records = query.all()
+            return records
+        except Exception as error:
+            logger.error("DB_OPS", "search_fetch", str(error))
+            return []
+    
+    def fetch_select_all(self, model):
+        try:
+            pass
+        except Exception as error:
+            logger.error("DB_OPS", "fetch_selected", str(error))
+            return []

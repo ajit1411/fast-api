@@ -1,5 +1,5 @@
 from base64 import encode
-from fastapi import FastAPI, Depends, Request, Response, status
+from fastapi import FastAPI, Depends, HTTPException, Request, Response, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from utils.Auth import UserAuth
@@ -69,10 +69,38 @@ async def register_user(request: Request, response: Response, db: Session = Depe
     except Exception as error:
         logger.error("/user/register", "register_user", str(error))
         response.status_code = status.HTTP_400_BAD_REQUEST
+        httpError = HTTPException(400, {"error": str(error)})
+        return httpError
+
+# check if username exist
+@api.get("/user/check-username")
+async def check_username(request: Request, response: Response, db: Session = Depends(get_db)):
+    try:
+        params = request.query_params
+        username = params.get("username", None)
+        if not username:
+            raise Exception("No username provided")
+        records = db.query(UserDetails).where(UserDetails.username==username).all()
+        if len(records) > 0:
+            return {
+                "status": True,
+                "data": {
+                    "exist_status": True
+                },
+                "error": None
+            }
         return {
-            "status": False,
-            "error": str(error)
+            "status": True,
+            "data": {
+                "exist_status": False,
+            },
+            "error": None
         }
+    except Exception as error:
+        logger.error("/user/check-username", "check_username", str(error))
+        response.status_code = status.HTTP_501_NOT_IMPLEMENTED
+        httpError = HTTPException(501, {"error": str(error)})
+        return httpError
 
 @api.get("/user/info")
 async def get_user(request: Request, response: Response, db: Session = Depends(get_db)):
@@ -106,12 +134,10 @@ async def get_user(request: Request, response: Response, db: Session = Depends(g
             "error": None
         }
     except Exception as error:
+        logger.error("/user/info", "get_user", str(error))
         response.status_code = status.HTTP_501_NOT_IMPLEMENTED
-        return {
-            "status": False,
-            "data": {},
-            "error": str(error)
-        }
+        httpError = HTTPException(501, {"error": str(error)})
+        return httpError
 
 # --------- PROJECTS APIs --------- #
 
@@ -127,12 +153,47 @@ async def fetch_users_tasks(response: Response, db: Session = Depends(get_db)):
             "error": None
         }
     except Exception as error:
+        logger.error("/user/task/all", "fetch_users_tasks", str(error))
         response.status_code = status.HTTP_501_NOT_IMPLEMENTED
+        httpError = HTTPException(501, {"error": str(error)})
+        return httpError
+
+# filter tasks
+@api.get("/user/task/filter")
+async def filter_tasks(request: Request, response: Response, db: Session = Depends(get_db)):
+    try:
+        db_ops = DB_OPS(db)
+        conditions = await request.json()
+        records = db_ops.filter_fetch(Tasks, conditions)
         return {
-            "status": False,
-            "data": [],
-            "error": str(error)
+            "status": True,
+            "data": records,
+            "error": None
         }
+    except Exception as error:
+        logger.error("/user/task/filter", "filter_tasks", str(error))
+        response.status_code = status.HTTP_501_NOT_IMPLEMENTED
+        httpErr = HTTPException(501, {"error": str(error)})
+        return httpErr
+
+# search tasks by field
+@api.get("/user/task/search")
+async def search_tasks(request: Request, response: Response, db: Session = Depends(get_db)):
+    try:
+        db_ops = DB_OPS(db)
+        conditions = dict(request.query_params)
+        records = db_ops.search_fetch(Tasks, conditions)
+        return {
+            "status": True,
+            "data": records,
+            "error": None
+        }
+    except Exception as error:
+        logger.error("/user/task/search", "search_tasks", str(error))
+        response.status_code = status.HTTP_501_NOT_IMPLEMENTED
+        httpError = HTTPException(501, {"error": str(error)})
+        return httpError
+
 
 # CREATE USER TASKS
 @api.post("/user/task/new")
@@ -145,7 +206,7 @@ async def create_new_task(request: Request, response: Response, db: Session = De
         task_id = generate_random_string()
         task_title = req_body.get("title", "Not Given")
         task_descr = req_body.get("title", "Not Given")
-        task = Tasks(task_id=task_id, title=task_title, description=task_descr, assigned_to="username", status=0)
+        task = Tasks(task_id=task_id, title=task_title, description=task_descr, assigned_to="ajit1411", status=0)
         db.add(task)
         db.commit()
         return {
@@ -158,8 +219,5 @@ async def create_new_task(request: Request, response: Response, db: Session = De
     except Exception as error:
         logger.error("/user/task/new", "create_new_task", str(error))
         response.status_code = status.HTTP_501_NOT_IMPLEMENTED
-        return {
-            "status": False,
-            "data": None,
-            "error": str(error)
-        }
+        httpError = HTTPException(501, {"error": str(error)})
+        return httpError
