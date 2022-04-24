@@ -1,5 +1,6 @@
 anyio==3.5.0
 asgiref==3.5.0
+bcrypt==3.2.0
 cffi==1.15.0
 click==8.1.2
 cryptography==36.0.2
@@ -12,8 +13,10 @@ psycopg2==2.9.3
 pycparser==2.21
 pydantic==1.9.0
 PyMySQL==1.0.2
+six==1.16.0
 sniffio==1.2.0
 SQLAlchemy==1.4.35
 starlette==0.17.1
 typing_extensions==4.2.0
 uvicorn==0.17.6
+PyJWT==2.3.0
